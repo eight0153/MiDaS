@@ -23,7 +23,23 @@ file in the root folder.
     ```
 
    The code was tested with Python 3.7, PyTorch 1.2.0, and OpenCV 3.4.2.
+   
+   Alternatively, you can use the included `environment.yml` to create the conda environment:
+   ```shell script
+    conda env create -f environment.yml
+    ```
+    **Note**: This environment has only been tested on Windows 10 and may not work on other operating systems.
+3.  Activate the conda environment:
+    ```shell script
+    conda activate MiDaS
+    ```
 
+### Generating depth maps
+1.  Run the script `demo.py`:
+    ```shell script
+    python demo.py -i <RGB image file or folder> -o <depth map output file or folder>
+    ```
+    See `python demo.py -h` for more details.
     
 ### Usage
 
