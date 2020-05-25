@@ -4,6 +4,7 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image
+import numpy as np
 import plac
 import torch
 from torchvision.transforms import Compose
@@ -36,8 +37,19 @@ def main(image_path, model_path='model.pt', output_path=None):
     rgb_path = os.path.abspath(image_path)
 
     if os.path.isdir(rgb_path):
+        min_depths = []
+        max_depths = []
+
         for file in os.listdir(rgb_path):
-            test(model, os.path.join(rgb_path, file), output_path)
+            depth_map = test(model, os.path.join(rgb_path, file), output_path)
+
+            min_depths.append(depth_map.min())
+            max_depths.append(depth_map.max())
+
+        print(f"Min Depth: {min(min_depths):.2f}")
+        print(f"Max Depth: {max(max_depths):.2f}")
+        print(f"Avg. Min Depth: {np.mean(min_depths):.2f}")
+        print(f"Avg. Max Depth: {np.mean(max_depths):.2f}")
     else:
         test(model, rgb_path, output_path)
 
@@ -50,8 +62,8 @@ def test(model, rgb_path, output_path):
     transform = Compose(
         [
             Resize(
-                384,
-                384,
+                1920,
+                1080,
                 resize_target=None,
                 keep_aspect_ratio=True,
                 ensure_multiple_of=32,
@@ -70,21 +82,24 @@ def test(model, rgb_path, output_path):
     file = f"{file.split('.')[0]}.png"
     depth_path = os.path.join(output_path, file) if output_path else os.path.join(path, f"out_{file}")
 
+    os.makedirs(os.path.dirname(depth_path), exist_ok=True)
+
     print(f"{rgb_path} -> {depth_path}")
 
     with torch.no_grad():
         sample = torch.from_numpy(img_input).to(device).unsqueeze(0)
-        prediction = model.forward(sample).cpu()
+        prediction = model.forward(sample)
 
-        # Output values are not in valid pixel range (uint8, 0-255) so we need to rescale
-        pred_min = prediction.min()
-        pred_max = prediction.max()
-        prediction = 255 * (prediction - pred_min) / (pred_max - pred_min)
+        output = prediction.permute((1, 2, 0))
+        # output = 1/1000 * (10000 - output)
+        output = output.squeeze().cpu().numpy()
 
-        # Output is inverse depth map, need to compare to normal depth maps so need to flip depth values.
-        prediction = (255 - prediction).abs()
+        # np.save(depth_path, output)
+        # Convert to the range [0, 1] so that matplotlib doesn't automatically scale the depth values.
+        # matplotlib.image.imsave(depth_path, 1/10000 * output)
+        cv2.imwrite(depth_path, 1/10000 * output)
 
-        matplotlib.image.imsave(depth_path, prediction.view(prediction.size(1), prediction.size(2)).data.numpy())
+    return output
 
 
 if __name__ == '__main__':
