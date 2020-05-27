@@ -9,11 +9,11 @@ import plac
 import torch
 from torchvision.transforms import Compose
 
-import loaddata_demo as loaddata
-import utils
+# import loaddata_demo as loaddata
+import MiDaS.utils as utils
 
-from models.midas_net import MidasNet
-from models.transforms import NormalizeImage, PrepareForNet, Resize
+from .models.midas_net import MidasNet
+from .models.transforms import NormalizeImage, PrepareForNet, Resize
 
 plt.set_cmap("gray")
 
@@ -46,10 +46,10 @@ def main(image_path, model_path='model.pt', output_path=None):
             min_depths.append(depth_map.min())
             max_depths.append(depth_map.max())
 
-        print(f"Min Depth: {min(min_depths):.2f}")
-        print(f"Max Depth: {max(max_depths):.2f}")
-        print(f"Avg. Min Depth: {np.mean(min_depths):.2f}")
-        print(f"Avg. Max Depth: {np.mean(max_depths):.2f}")
+        print("Min Depth: {.2f}".format(min(min_depths)))
+        print("Max Depth: {.2f}".format(max(max_depths)))
+        print("Avg. Min Depth: {.2f}".format(np.mean(min_depths)))
+        print("Avg. Max Depth: {.2f}".format(np.mean(max_depths)))
     else:
         test(model, rgb_path, output_path)
 
@@ -79,12 +79,12 @@ def test(model, rgb_path, output_path):
     img_input = transform({"image": img})["image"]
 
     path, file = os.path.split(rgb_path)
-    file = f"{file.split('.')[0]}.png"
-    depth_path = os.path.join(output_path, file) if output_path else os.path.join(path, f"out_{file}")
+    file = "{}.png".format(file.split('.')[0])
+    depth_path = os.path.abspath(os.path.join(output_path, file) if output_path else os.path.join(path, "out_{}".format(file)))
 
     os.makedirs(os.path.dirname(depth_path), exist_ok=True)
 
-    print(f"{rgb_path} -> {depth_path}")
+    print("{} -> {}".format(rgb_path, depth_path))
 
     with torch.no_grad():
         sample = torch.from_numpy(img_input).to(device).unsqueeze(0)
